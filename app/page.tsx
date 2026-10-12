@@ -163,7 +163,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Goal Card */}
+        {/* Goal */}
         <section className="overflow-hidden rounded-[2rem] bg-[#e3e8dc] shadow-sm">
           <div className="p-7 sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -439,7 +439,7 @@ export default function Home() {
                   >
                     <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex gap-4">
-                        {/* Decorative Book Cover */}
+                        {/* Book Cover */}
                         <div className="hidden h-24 w-16 shrink-0 items-center justify-center rounded-lg bg-[#59664e] text-2xl text-white shadow-sm sm:flex">
                           📖
                         </div>
