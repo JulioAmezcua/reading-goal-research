@@ -14,6 +14,7 @@ export default function Home() {
   const [title, setTitle] = useState("");
   const [pages, setPages] = useState("");
   const [status, setStatus] = useState("Want to Read");
+  const [readingGoal, setReadingGoal] = useState(1000);
 
   const [books, setBooks] = useState<Book[]>([
     {
@@ -26,13 +27,13 @@ export default function Home() {
   ]);
 
   function addBook() {
-    if (!title.trim()) return;
+    if (!title.trim() || Number(pages) <= 0) return;
 
     const newBook: Book = {
       id: Date.now(),
       title,
-      pages: Number(pages) || 0,
-      pagesRead: 0,
+      pages: Number(pages),
+      pagesRead: status === "Finished" ? Number(pages) : 0,
       status,
     };
 
@@ -45,27 +46,51 @@ export default function Home() {
   function updateProgress(id: number, newProgress: number) {
     setBooks(
       books.map((book) => {
-        if (book.id === id) {
-          const safeProgress = Math.min(
-            Math.max(newProgress, 0),
-            book.pages
-          );
+        if (book.id !== id) return book;
 
-          return {
-            ...book,
-            pagesRead: safeProgress,
-            status:
-              safeProgress >= book.pages && book.pages > 0
-                ? "Finished"
-                : safeProgress > 0
-                ? "Currently Reading"
-                : book.status,
-          };
+        const safeProgress = Math.min(
+          Math.max(newProgress, 0),
+          book.pages
+        );
+
+        let newStatus = book.status;
+
+        if (safeProgress >= book.pages) {
+          newStatus = "Finished";
+        } else if (safeProgress > 0) {
+          newStatus = "Currently Reading";
         }
 
-        return book;
+        return {
+          ...book,
+          pagesRead: safeProgress,
+          status: newStatus,
+        };
       })
     );
+  }
+
+  function updateStatus(id: number, newStatus: string) {
+    setBooks(
+      books.map((book) => {
+        if (book.id !== id) return book;
+
+        return {
+          ...book,
+          status: newStatus,
+          pagesRead:
+            newStatus === "Finished"
+              ? book.pages
+              : newStatus === "Want to Read"
+              ? 0
+              : book.pagesRead,
+        };
+      })
+    );
+  }
+
+  function deleteBook(id: number) {
+    setBooks(books.filter((book) => book.id !== id));
   }
 
   const totalPagesRead = books.reduce(
@@ -73,19 +98,26 @@ export default function Home() {
     0
   );
 
-  const readingGoal = 1000;
+  const finishedBooks = books.filter(
+    (book) => book.status === "Finished"
+  ).length;
 
-  const goalPercentage = Math.min(
-    Math.round((totalPagesRead / readingGoal) * 100),
-    100
-  );
+  const currentlyReading = books.filter(
+    (book) => book.status === "Currently Reading"
+  ).length;
+
+  const goalPercentage =
+    readingGoal > 0
+      ? Math.min(
+          Math.round((totalPagesRead / readingGoal) * 100),
+          100
+        )
+      : 0;
 
   return (
     <main className="min-h-screen bg-[#f7f3ed] px-6 py-10 text-[#332d29]">
       <div className="mx-auto max-w-4xl">
-
-        {/* Header */}
-        <div className="mb-10">
+        <header className="mb-10">
           <p className="mb-2 text-sm font-medium uppercase tracking-[0.2em] text-[#7c8b6b]">
             My Reading Journal
           </p>
@@ -97,11 +129,10 @@ export default function Home() {
           <p className="mt-3 text-[#756c66]">
             Keep track of your books and watch your reading progress grow.
           </p>
-        </div>
+        </header>
 
-        {/* Reading Goal */}
         <section className="rounded-3xl bg-[#e6eadf] p-7 shadow-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-medium text-[#667357]">
                 2026 READING GOAL
@@ -112,12 +143,26 @@ export default function Home() {
               </h2>
             </div>
 
-            <div className="text-3xl">🌿</div>
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-wide text-[#667357]">
+                Goal
+              </label>
+
+              <input
+                type="number"
+                min="1"
+                value={readingGoal}
+                onChange={(e) =>
+                  setReadingGoal(Math.max(Number(e.target.value), 1))
+                }
+                className="mt-1 w-28 rounded-xl border border-[#cbd2c3] bg-white/70 px-3 py-2 outline-none focus:border-[#718261]"
+              />
+            </div>
           </div>
 
           <div className="mt-5 h-3 overflow-hidden rounded-full bg-white">
             <div
-              className="h-full rounded-full bg-[#718261] transition-all"
+              className="h-full rounded-full bg-[#718261] transition-all duration-300"
               style={{ width: `${goalPercentage}%` }}
             />
           </div>
@@ -127,7 +172,31 @@ export default function Home() {
           </p>
         </section>
 
-        {/* Add Book */}
+        <section className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <p className="text-sm text-[#847a73]">Pages Read</p>
+            <p className="mt-1 text-3xl font-semibold">
+              {totalPagesRead}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <p className="text-sm text-[#847a73]">
+              Currently Reading
+            </p>
+            <p className="mt-1 text-3xl font-semibold">
+              {currentlyReading}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white p-5 shadow-sm">
+            <p className="text-sm text-[#847a73]">Books Finished</p>
+            <p className="mt-1 text-3xl font-semibold">
+              {finishedBooks}
+            </p>
+          </div>
+        </section>
+
         <section className="mt-8 rounded-3xl bg-white p-7 shadow-sm">
           <h2 className="text-2xl font-semibold">Add a Book</h2>
 
@@ -146,6 +215,7 @@ export default function Home() {
 
             <input
               type="number"
+              min="1"
               placeholder="Number of pages"
               value={pages}
               onChange={(e) => setPages(e.target.value)}
@@ -171,7 +241,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Books */}
         <section className="mt-10">
           <div className="mb-5 flex items-end justify-between">
             <div>
@@ -199,19 +268,29 @@ export default function Home() {
               {books.map((book) => {
                 const percentage =
                   book.pages > 0
-                    ? Math.round((book.pagesRead / book.pages) * 100)
+                    ? Math.round(
+                        (book.pagesRead / book.pages) * 100
+                      )
                     : 0;
 
                 return (
-                  <div
+                  <article
                     key={book.id}
                     className="rounded-3xl bg-white p-6 shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <span className="rounded-full bg-[#edf0e8] px-3 py-1 text-xs font-medium text-[#667357]">
-                          {book.status}
-                        </span>
+                        <select
+                          value={book.status}
+                          onChange={(e) =>
+                            updateStatus(book.id, e.target.value)
+                          }
+                          className="rounded-full border-0 bg-[#edf0e8] px-3 py-1.5 text-xs font-medium text-[#667357] outline-none"
+                        >
+                          <option>Want to Read</option>
+                          <option>Currently Reading</option>
+                          <option>Finished</option>
+                        </select>
 
                         <h3 className="mt-3 text-xl font-semibold">
                           {book.title}
@@ -222,20 +301,29 @@ export default function Home() {
                         </p>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-2xl font-semibold">
-                          {percentage}%
-                        </p>
+                      <div className="flex items-start gap-5">
+                        <div className="text-right">
+                          <p className="text-2xl font-semibold">
+                            {percentage}%
+                          </p>
 
-                        <p className="text-xs text-[#847a73]">
-                          completed
-                        </p>
+                          <p className="text-xs text-[#847a73]">
+                            completed
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => deleteBook(book.id)}
+                          className="rounded-lg px-3 py-2 text-sm text-[#9a655f] transition hover:bg-[#f8eeee]"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
 
                     <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-[#eeeae5]">
                       <div
-                        className="h-full rounded-full bg-[#7c8b6b] transition-all"
+                        className="h-full rounded-full bg-[#7c8b6b] transition-all duration-300"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -263,7 +351,7 @@ export default function Home() {
                         of {book.pages} pages
                       </p>
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
